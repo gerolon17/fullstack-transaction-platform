@@ -1,0 +1,43 @@
+services:
+  db:
+    image: postgres:15-alpine
+    container_name: tenpo_postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: tenpo_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: tenpo_backend
+    environment:
+      # Overrides the application.properties to connect to the Docker DB container
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/tenpo_db
+      SPRING_DATASOURCE_USERNAME: postgres
+      SPRING_DATASOURCE_PASSWORD: postgres
+    ports:
+      - "8080:8080"
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    container_name: tenpo_frontend
+    ports:
+      - "5173:80" # Maps the host's 5173 port to the container's Nginx port 80
+    depends_on:
+      - backend
+    restart: unless-stopped
+
+volumes:
+  postgres_data:
